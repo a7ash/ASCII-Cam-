@@ -6,7 +6,11 @@
 <title>ASCII Frame</title>
 <style>
   html,body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui,sans-serif; color:#fff; }
+  @font-face { font-family:'Geist Mono'; font-weight:600; font-display:swap; src:url(https://cdn.jsdelivr.net/gh/bothuany/ascii-animals@6a887d0b6693c357c44daa653b1a875951b6319a/fonts/GeistMono-SemiBold.ttf) format('truetype'); }
+  html,body { background:rgb(6,7,12); }
   canvas { position:fixed; inset:0; width:100%; height:100%; }
+  #bg { font-family:'Geist Mono', ui-monospace, Menlo, monospace; }
+  #c { visibility:hidden; }
   video { display:none; }
   #msg { position:fixed; inset:0; display:grid; place-items:center; text-align:center; z-index:3; padding:24px; }
   #msg button { font:inherit; font-size:16px; padding:12px 22px; border:0; border-radius:999px; background:#d4ff00; color:#111; cursor:pointer; }
@@ -14,11 +18,13 @@
 </style>
 </head>
 <body>
+<canvas id="bg"></canvas>
 <canvas id="c"></canvas>
 <video id="v" playsinline muted></video>
 <div id="msg"><button id="start">start camera</button></div>
 <div id="hint"></div>
 
+<script src="https://cdn.jsdelivr.net/gh/bothuany/ascii-animals@6a887d0b6693c357c44daa653b1a875951b6319a/engine.js"></script>
 <script type="module">
 import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
 
@@ -33,6 +39,18 @@ const v = document.getElementById("v"), hint = document.getElementById("hint"), 
 const tmp = document.createElement("canvas"), tctx = tmp.getContext("2d", { willReadFrequently: true });
 let dpr = 1, W = 0, H = 0, landmarker = null, lastTs = -1;
 let quad = null, alpha = 0;      // smoothed corner points + fade
+
+// ---- animal background on the home screen (engine by bothuany/ascii-animals) ----
+let bgEngine = null;
+(function startAnimals() {
+  const bg = document.getElementById("bg");
+  if (!window.AsciiAnimals) return;
+  const q = new URLSearchParams(location.search);              // ?animal=koi to force one
+  const list = AsciiAnimals.ANIMALS;
+  const animal = list.includes(q.get("animal")) ? q.get("animal") : list[Math.floor(Math.random() * list.length)];
+  const go = () => { bgEngine = AsciiAnimals.start(bg, AsciiAnimals.fromQuery("animal=" + animal)); };
+  document.fonts.load('600 16px "Geist Mono"').then(go, go);
+})();
 
 function fit() { dpr = devicePixelRatio || 1; W = cv.width = innerWidth * dpr; H = cv.height = innerHeight * dpr; }
 addEventListener("resize", fit); fit();
@@ -167,6 +185,9 @@ document.getElementById("start").onclick = async () => {
     v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: 1280, height: 720 }, audio: false });
     await v.play();
     msg.remove();
+    if (bgEngine) bgEngine.destroy();
+    document.getElementById("bg").remove();
+    cv.style.visibility = "visible";
     frame();
     const files = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
     landmarker = await HandLandmarker.createFromOptions(files, {
