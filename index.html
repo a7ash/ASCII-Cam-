@@ -13,7 +13,19 @@
   #c { visibility:hidden; }
   video { display:none; }
   #msg { position:fixed; inset:0; display:grid; place-items:center; text-align:center; z-index:3; padding:24px; }
-  #msg button { font:inherit; font-size:16px; padding:12px 22px; border:0; border-radius:999px; background:#d4ff00; color:#111; cursor:pointer; }
+  #msg button { font:inherit; font-size:24px; font-weight:600; padding:20px 44px; border:0; border-radius:999px; background:#d4ff00; color:#111; cursor:pointer; }
+  #home-link { position:fixed; top:16px; left:18px; z-index:6; color:#d4ff00; text-decoration:none; font-size:16px; font-weight:600; letter-spacing:.02em; padding-right:26px; transition:color .3s; }
+  #home-link:hover { text-decoration:underline; }
+  body.live #home-link { color:#000; }
+  #home-link svg { position:absolute; right:0; bottom:-8px; width:18px; height:18px; fill:currentColor; animation:float 1.8s ease-in-out infinite; }
+  @keyframes float { 0%,100% { transform:translate(0,0); } 50% { transform:translate(4px,4px); } }
+  #shots { position:fixed; right:16px; bottom:16px; display:flex; gap:10px; z-index:6; }
+  #shots a { display:block; position:relative; width:160px; border:2px solid #d4ff00; border-radius:6px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,.5); animation:pop .35s ease-out; background:#000; }
+  #shots a img { display:block; width:100%; }
+  #shots a span { position:absolute; inset:auto 0 0 0; background:rgba(0,0,0,.65); color:#d4ff00; font-size:11px; text-align:center; padding:3px; opacity:0; transition:opacity .2s; }
+  #shots a:hover span { opacity:1; }
+  @keyframes pop { from { transform:scale(.6); opacity:0; } to { transform:scale(1); opacity:1; } }
+  #flash { position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:5; transition:opacity .5s; }
   #hint { position:fixed; left:0; right:0; bottom:16px; text-align:center; font-size:13px; opacity:.8; z-index:2; pointer-events:none; text-shadow:0 1px 4px #000; }
 </style>
 </head>
@@ -23,13 +35,17 @@
 <video id="v" playsinline muted></video>
 <div id="msg"><button id="start">start camera</button></div>
 <div id="hint"></div>
+<a id="home-link" href="https://a7ash.github.io" target="_blank" rel="noopener">a7ash.github.io<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2l16 9-7 2-3 8z"/></svg></a>
+<div id="flash"></div>
+<div id="shots"></div>
 
 <script src="https://cdn.jsdelivr.net/gh/bothuany/ascii-animals@6a887d0b6693c357c44daa653b1a875951b6319a/engine.js"></script>
 <script type="module">
 import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
 
 // ---- settings -------------------------------------------------------
-const CELL = 14;                 // grid size in css px
+const CELL = 14;                 // dot grid size in css px
+const ASCII_CELL = 7;            // ascii cell size inside the frame (smaller = sharper)
 const PINK_HOT = "#ff4fc3", PINK_PALE = "#ffc4ec", INK = "#1a0a14", LIME = "#d4ff00";
 const MIRROR = true;
 // ---------------------------------------------------------------------
@@ -48,7 +64,9 @@ let bgEngine = null;
   const q = new URLSearchParams(location.search);              // ?animal=koi to force one
   const list = AsciiAnimals.ANIMALS;
   const animal = list.includes(q.get("animal")) ? q.get("animal") : list[Math.floor(Math.random() * list.length)];
-  const go = () => { bgEngine = AsciiAnimals.start(bg, AsciiAnimals.fromQuery("animal=" + animal)); };
+  const sz = AsciiAnimals.TWEAKS[animal].find(t => t.key === "size");   // 1.4x the animal's default size
+  const qs = "animal=" + animal + (sz ? "&size=" + sz.def * 1.4 : "");
+  const go = () => { bgEngine = AsciiAnimals.start(bg, AsciiAnimals.fromQuery(qs)); };
   document.fonts.load('600 16px "Geist Mono"').then(go, go);
 })();
 
@@ -92,6 +110,36 @@ function findQuad(res, m) {
     pts.push(mapPt(hand[8], m));   // index tip
   }
   return orderQuad(pts);
+}
+
+// peace sign: index + middle up, ring + pinky curled (thumb free). Works with either hand.
+function isPeace(h) {
+  const d = (a, b) => Math.hypot((a.x - b.x) * (v.videoWidth || 1), (a.y - b.y) * (v.videoHeight || 1));
+  const up = (tip, pip) => d(h[tip], h[0]) > d(h[pip], h[0]) * 1.15;
+  const down = (tip, pip) => d(h[tip], h[0]) < d(h[pip], h[0]) * 1.05;
+  return up(8, 6) && up(12, 10) && down(16, 14) && down(20, 18);
+}
+let peaceSince = 0, lastShot = 0, wantShot = false;
+function handlePeace(res, now) {
+  const on = (res.landmarks || []).some(isPeace);
+  if (!on) { peaceSince = 0; return; }
+  if (!peaceSince) peaceSince = now;
+  if (now - peaceSince > 600 && now - lastShot > 3000) { wantShot = true; lastShot = now; peaceSince = 0; }
+}
+function takeShot() {
+  wantShot = false;
+  cv.toBlob(b => {
+    if (!b) return;
+    const url = URL.createObjectURL(b);
+    const a = document.createElement("a");
+    a.href = url; a.download = "ascii-frame-" + Date.now() + ".png";
+    a.innerHTML = '<img alt="snapshot" src="' + url + '"><span>click to download</span>';
+    const box = document.getElementById("shots");
+    box.appendChild(a);
+    while (box.children.length > 4) { URL.revokeObjectURL(box.firstChild.href); box.firstChild.remove(); }
+    const f = document.getElementById("flash"); f.style.transition = "none"; f.style.opacity = .85;
+    requestAnimationFrame(() => { f.style.transition = "opacity .5s"; f.style.opacity = 0; });
+  }, "image/png");
 }
 
 function level(l) { return l < 0.28 ? 0 : l < 0.5 ? 1 : l < 0.74 ? 2 : 3; }
@@ -139,7 +187,7 @@ function drawAsciiInQuad(q, c, a) {
   }
 
   // lime outline where dark meets light
-  ctx.strokeStyle = LIME; ctx.lineWidth = 3 * dpr; ctx.lineCap = "round";
+  ctx.strokeStyle = LIME; ctx.lineWidth = 2 * dpr; ctx.lineCap = "round";
   ctx.beginPath();
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const L = lv[y * cols + x] < 2;
@@ -168,7 +216,9 @@ function frame() {
   let target = null;
   if (landmarker && v.currentTime !== lastTs) {
     lastTs = v.currentTime;
-    target = findQuad(landmarker.detectForVideo(v, performance.now()), m);
+    const res = landmarker.detectForVideo(v, performance.now());
+    target = findQuad(res, m);
+    handlePeace(res, performance.now());
   }
   if (target) {
     quad = quad ? quad.map((p, i) => ({ x: p.x + (target[i].x - p.x) * 0.5, y: p.y + (target[i].y - p.y) * 0.5 })) : target;
@@ -176,8 +226,9 @@ function frame() {
   } else alpha = Math.max(0, alpha - 0.08);
 
   drawDots(c);
-  if (quad && alpha > 0.01) { drawAsciiInQuad(quad, c, alpha); drawCorners(quad, alpha); }
-  hint.textContent = landmarker ? (alpha > 0.01 ? "" : "make an L with each thumb and index finger and frame your face") : "loading hand tracking...";
+  if (quad && alpha > 0.01) { drawAsciiInQuad(quad, ASCII_CELL * dpr, alpha); drawCorners(quad, alpha); }
+  if (wantShot) takeShot();
+  hint.textContent = landmarker ? (alpha > 0.01 ? "" : "frame your face with two L-shaped hands, or flash a peace sign for a photo") : "loading hand tracking...";
 }
 
 document.getElementById("start").onclick = async () => {
@@ -188,6 +239,7 @@ document.getElementById("start").onclick = async () => {
     if (bgEngine) bgEngine.destroy();
     document.getElementById("bg").remove();
     cv.style.visibility = "visible";
+    document.body.classList.add("live");
     frame();
     const files = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
     landmarker = await HandLandmarker.createFromOptions(files, {
