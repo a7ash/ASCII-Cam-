@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASCII Cam</title>
+<style>
+  :root { --bg:#0e2a32; --fg:#9fe3d0; }
+  body.light { --bg:#e9efe6; --fg:#0e2a32; }
+  body.black { --bg:#000; --fg:#d8d8d8; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); overflow:hidden;
+    font-family: ui-monospace, Menlo, Consolas, monospace; }
+  canvas { position:fixed; inset:0; width:100%; height:100%; }
+  video { display:none; }
+  #ui { position:fixed; left:12px; bottom:12px; display:flex; gap:12px; font-size:12px; z-index:2; }
+  button { all:unset; cursor:pointer; opacity:.6; } button:hover,button.on { opacity:1; text-decoration:underline; }
+  #msg { position:fixed; inset:0; display:grid; place-items:center; text-align:center; z-index:3; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<video id="v" playsinline muted></video>
+<div id="msg"><button id="start">start camera</button></div>
+<div id="ui">
+  <button data-t="">pond</button><button data-t="black">black</button><button data-t="light">light</button>
+  <button id="inv">invert</button><button id="sz">size</button><button id="mir" class="on">mirror</button>
+</div>
+<script>
+const RAMP = " .,:;i1tfLCG08@";   // dark -> light; edit freely
+let cell = 10, invert = false, mirror = true;
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const v = document.getElementById('v');
+const tmp = document.createElement('canvas'), tctx = tmp.getContext('2d', { willReadFrequently: true });
+
+function fit() {
+  const d = devicePixelRatio || 1;
+  cv.width = innerWidth * d; cv.height = innerHeight * d;
+}
+addEventListener('resize', fit); fit();
+
+function draw() {
+  const d = devicePixelRatio || 1, W = cv.width, H = cv.height;
+  const cw = cell * d, ch = cell * 1.9 * d;           // chars are taller than wide
+  const cols = Math.floor(W / cw), rows = Math.floor(H / ch);
+  tmp.width = cols; tmp.height = rows;                 // downscale = the "pixelation"
+  tctx.save();
+  if (mirror) { tctx.translate(cols, 0); tctx.scale(-1, 1); }
+  // cover-fit the video into the grid
+  const vr = v.videoWidth / v.videoHeight, gr = cols * cw / (rows * ch);
+  let sw = v.videoWidth, sh = v.videoHeight, sx = 0, sy = 0;
+  if (vr > gr) { sw = sh * gr; sx = (v.videoWidth - sw) / 2; } else { sh = sw / gr; sy = (v.videoHeight - sh) / 2; }
+  tctx.drawImage(v, sx, sy, sw, sh, 0, 0, cols, rows);
+  tctx.restore();
+  const px = tctx.getImageData(0, 0, cols, rows).data;
+
+  const cs = getComputedStyle(document.body);
+  ctx.fillStyle = cs.getPropertyValue('--bg'); ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = cs.getPropertyValue('--fg');
+  ctx.font = `${cell * 1.6 * d}px ui-monospace, Menlo, Consolas, monospace`;
+  ctx.textBaseline = 'top';
+  const ox = (W - cols * cw) / 2, oy = (H - rows * ch) / 2, n = RAMP.length - 1;
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+    const i = (y * cols + x) * 4;
+    let l = (0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]) / 255;
+    l = Math.min(1, Math.max(0, (l - 0.1) * 1.25));    // contrast boost
+    if (invert) l = 1 - l;
+    const ch_ = RAMP[Math.round(l * n)];
+    if (ch_ !== ' ') ctx.fillText(ch_, ox + x * cw, oy + y * ch);
+  }
+  requestAnimationFrame(draw);
+}
+
+document.getElementById('start').onclick = async () => {
+  try {
+    v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+    await v.play();
+    document.getElementById('msg').remove();
+    draw();
+  } catch (e) {
+    document.getElementById('msg').textContent = 'Camera blocked. Allow access and serve over https or localhost.';
+  }
+};
+document.querySelectorAll('[data-t]').forEach(b => b.onclick = () => document.body.className = b.dataset.t);
+document.getElementById('inv').onclick = e => { invert = !invert; e.target.classList.toggle('on', invert); };
+document.getElementById('mir').onclick = e => { mirror = !mirror; e.target.classList.toggle('on', mirror); };
+document.getElementById('sz').onclick = () => { cell = cell <= 6 ? 16 : cell - 2; };
+</script>
+</body>
+</html>
