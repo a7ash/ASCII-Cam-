@@ -115,15 +115,15 @@ function findQuad(res, m) {
 // peace sign: index + middle up, ring + pinky curled (thumb free). Works with either hand.
 function isPeace(h) {
   const d = (a, b) => Math.hypot((a.x - b.x) * (v.videoWidth || 1), (a.y - b.y) * (v.videoHeight || 1));
-  const up = (tip, pip) => d(h[tip], h[0]) > d(h[pip], h[0]) * 1.15;
-  const down = (tip, pip) => d(h[tip], h[0]) < d(h[pip], h[0]) * 1.05;
-  return up(8, 6) && up(12, 10) && down(16, 14) && down(20, 18);
+  const up = (tip, pip) => d(h[tip], h[0]) > d(h[pip], h[0]) * 1.35;      // fully straight
+  const down = (tip, pip) => d(h[tip], h[0]) < d(h[pip], h[0]) * 0.95;    // clearly curled
+  const spread = d(h[8], h[12]) > d(h[5], h[8]) * 0.3;                    // index + middle form a V
+  return up(8, 6) && up(12, 10) && down(16, 14) && down(20, 18) && spread;
 }
-let peaceSince = 0, lastShot = 0, wantShot = false;
+let peaceFrames = 0, lastShot = 0, wantShot = false;
 function handlePeace(res, now) {
-  const on = (res.landmarks || []).some(isPeace);
-  if (!on) { peaceSince = 0; return; }
-  if (now - lastShot > 3000) { wantShot = true; lastShot = now; }   // instant, 3s cooldown
+  if (!(res.landmarks || []).some(isPeace)) { peaceFrames = 0; return; }
+  if (++peaceFrames >= 2 && now - lastShot > 3000) { wantShot = true; lastShot = now; }   // 2 frames (~60ms), 3s cooldown
 }
 function takeShot() {
   wantShot = false;
