@@ -123,8 +123,7 @@ let peaceSince = 0, lastShot = 0, wantShot = false;
 function handlePeace(res, now) {
   const on = (res.landmarks || []).some(isPeace);
   if (!on) { peaceSince = 0; return; }
-  if (!peaceSince) peaceSince = now;
-  if (now - peaceSince > 300 && now - lastShot > 3000) { wantShot = true; lastShot = now; peaceSince = 0; }
+  if (now - lastShot > 3000) { wantShot = true; lastShot = now; }   // instant, 3s cooldown
 }
 function takeShot() {
   wantShot = false;
@@ -137,6 +136,10 @@ function takeShot() {
     const box = document.getElementById("shots");
     box.appendChild(a);
     while (box.children.length > 4) { URL.revokeObjectURL(box.firstChild.href); box.firstChild.remove(); }
+    setTimeout(() => {                                    // vanish after 5s
+      a.style.transition = "opacity .4s, transform .4s"; a.style.opacity = 0; a.style.transform = "scale(.8)";
+      setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 400);
+    }, 5000);
     const f = document.getElementById("flash"); f.style.transition = "none"; f.style.opacity = .85;
     requestAnimationFrame(() => { f.style.transition = "opacity .5s"; f.style.opacity = 0; });
   }, "image/png");
@@ -225,8 +228,14 @@ function frame() {
     alpha = Math.min(1, alpha + 0.2);
   } else alpha = Math.max(0, alpha - 0.08);
 
-  drawDots(c);
-  if (quad && alpha > 0.01) { drawAsciiInQuad(quad, ASCII_CELL * dpr, alpha); drawCorners(quad, alpha); }
+  if (quad && alpha > 0.01) {
+    drawAsciiInQuad(quad, ASCII_CELL * dpr, alpha);       // sample the clean video first...
+    ctx.save();                                           // ...then draw the dot grid only outside the window
+    ctx.beginPath(); ctx.rect(0, 0, W, H);
+    quad.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+    ctx.closePath(); ctx.clip("evenodd"); drawDots(c); ctx.restore();
+    drawCorners(quad, alpha);
+  } else drawDots(c);
   if (wantShot) takeShot();
   hint.textContent = landmarker ? (alpha > 0.01 ? "" : "frame your face with two L-shaped hands, or flash a peace sign for a photo") : "loading hand tracking...";
 }
