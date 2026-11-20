@@ -19,6 +19,17 @@
   body.live #home-link { color:#000; }
   #home-link svg { position:absolute; right:2px; bottom:-20px; width:15px; height:25px; animation:float 1.6s ease-in-out infinite; }
   @keyframes float { 0%,100% { transform:translate(0,0); } 50% { transform:translate(8px,8px); } }
+  #palette { position:fixed; top:34px; right:44px; z-index:6; display:none; align-items:center; gap:16px; color:#000; font-size:19px; font-weight:600; cursor:pointer; user-select:none; }
+  body.live #palette { display:flex; }
+  #palette .cell { position:relative; width:22px; height:22px; margin-right:6px; }
+  #palette .cell i { position:absolute; inset:0; border:2px solid #000; box-sizing:border-box; }
+  #palette .cell #pal-sh { transform:translate(6px,6px); }
+  .proj { position:fixed; z-index:6; display:none; padding:12px 24px; font-size:20px; font-weight:600; color:#d4ff00; background:rgba(0,0,0,.55); border:2px solid #d4ff00; border-radius:999px; text-decoration:none; animation:bob 3s ease-in-out infinite; transition:transform .2s, background .2s, color .2s; }
+  body.live .proj { display:block; }
+  .proj.hot, .proj:hover { background:#d4ff00; color:#000; transform:scale(1.12); }
+  @keyframes bob { 0%,100% { translate:0 0; } 50% { translate:0 -8px; } }
+  #cursor { position:fixed; left:0; top:0; width:30px; height:30px; margin:-15px 0 0 -15px; border:3px solid #d4ff00; border-radius:50%; background:rgba(0,0,0,.35); z-index:9; pointer-events:none; display:none; transition:transform .12s, background .12s; }
+  #cursor.pinch { background:#d4ff00; transform:scale(.65); }
   #shots { position:fixed; right:16px; bottom:16px; display:flex; gap:10px; z-index:6; }
   #shots a { display:block; position:relative; width:160px; border:2px solid #d4ff00; border-radius:6px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,.5); animation:pop .35s ease-out; background:#000; }
   #shots a img { display:block; width:100%; }
@@ -36,6 +47,8 @@
 <div id="msg"><button id="start">start camera</button></div>
 <div id="hint"></div>
 <a id="home-link" href="https://a7ash.github.io" target="_blank" rel="noopener">a7ash.github.io<svg viewBox="0 0 12 20" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="0" width="1" height="1" fill="#000"/><rect x="0" y="1" width="1" height="1" fill="#000"/><rect x="1" y="1" width="1" height="1" fill="#000"/><rect x="0" y="2" width="1" height="1" fill="#000"/><rect x="1" y="2" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="2" width="1" height="1" fill="#000"/><rect x="0" y="3" width="1" height="1" fill="#000"/><rect x="1" y="3" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="3" width="1" height="1" fill="#fff"/><rect x="3" y="3" width="1" height="1" fill="#000"/><rect x="0" y="4" width="1" height="1" fill="#000"/><rect x="1" y="4" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="4" width="1" height="1" fill="#fff"/><rect x="3" y="4" width="1" height="1" fill="#fff"/><rect x="4" y="4" width="1" height="1" fill="#000"/><rect x="0" y="5" width="1" height="1" fill="#000"/><rect x="1" y="5" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="5" width="1" height="1" fill="#fff"/><rect x="3" y="5" width="1" height="1" fill="#fff"/><rect x="4" y="5" width="1" height="1" fill="#fff"/><rect x="5" y="5" width="1" height="1" fill="#000"/><rect x="0" y="6" width="1" height="1" fill="#000"/><rect x="1" y="6" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="6" width="1" height="1" fill="#fff"/><rect x="3" y="6" width="1" height="1" fill="#fff"/><rect x="4" y="6" width="1" height="1" fill="#fff"/><rect x="5" y="6" width="1" height="1" fill="#fff"/><rect x="6" y="6" width="1" height="1" fill="#000"/><rect x="0" y="7" width="1" height="1" fill="#000"/><rect x="1" y="7" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="7" width="1" height="1" fill="#fff"/><rect x="3" y="7" width="1" height="1" fill="#fff"/><rect x="4" y="7" width="1" height="1" fill="#fff"/><rect x="5" y="7" width="1" height="1" fill="#fff"/><rect x="6" y="7" width="1" height="1" fill="#fff"/><rect x="7" y="7" width="1" height="1" fill="#000"/><rect x="0" y="8" width="1" height="1" fill="#000"/><rect x="1" y="8" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="8" width="1" height="1" fill="#fff"/><rect x="3" y="8" width="1" height="1" fill="#fff"/><rect x="4" y="8" width="1" height="1" fill="#fff"/><rect x="5" y="8" width="1" height="1" fill="#fff"/><rect x="6" y="8" width="1" height="1" fill="#fff"/><rect x="7" y="8" width="1" height="1" fill="#fff"/><rect x="8" y="8" width="1" height="1" fill="#000"/><rect x="0" y="9" width="1" height="1" fill="#000"/><rect x="1" y="9" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="9" width="1" height="1" fill="#fff"/><rect x="3" y="9" width="1" height="1" fill="#fff"/><rect x="4" y="9" width="1" height="1" fill="#fff"/><rect x="5" y="9" width="1" height="1" fill="#fff"/><rect x="6" y="9" width="1" height="1" fill="#fff"/><rect x="7" y="9" width="1" height="1" fill="#fff"/><rect x="8" y="9" width="1" height="1" fill="#fff"/><rect x="9" y="9" width="1" height="1" fill="#000"/><rect x="0" y="10" width="1" height="1" fill="#000"/><rect x="1" y="10" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="10" width="1" height="1" fill="#fff"/><rect x="3" y="10" width="1" height="1" fill="#fff"/><rect x="4" y="10" width="1" height="1" fill="#fff"/><rect x="5" y="10" width="1" height="1" fill="#fff"/><rect x="6" y="10" width="1" height="1" fill="#fff"/><rect x="7" y="10" width="1" height="1" fill="#fff"/><rect x="8" y="10" width="1" height="1" fill="#fff"/><rect x="9" y="10" width="1" height="1" fill="#fff"/><rect x="10" y="10" width="1" height="1" fill="#000"/><rect x="0" y="11" width="1" height="1" fill="#000"/><rect x="1" y="11" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="11" width="1" height="1" fill="#fff"/><rect x="3" y="11" width="1" height="1" fill="#fff"/><rect x="4" y="11" width="1" height="1" fill="#fff"/><rect x="5" y="11" width="1" height="1" fill="#fff"/><rect x="6" y="11" width="1" height="1" fill="#fff"/><rect x="7" y="11" width="1" height="1" fill="#cbcbcb"/><rect x="8" y="11" width="1" height="1" fill="#cbcbcb"/><rect x="9" y="11" width="1" height="1" fill="#cbcbcb"/><rect x="10" y="11" width="1" height="1" fill="#cbcbcb"/><rect x="11" y="11" width="1" height="1" fill="#000"/><rect x="0" y="12" width="1" height="1" fill="#000"/><rect x="1" y="12" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="12" width="1" height="1" fill="#fff"/><rect x="3" y="12" width="1" height="1" fill="#fff"/><rect x="4" y="12" width="1" height="1" fill="#fff"/><rect x="5" y="12" width="1" height="1" fill="#fff"/><rect x="6" y="12" width="1" height="1" fill="#fff"/><rect x="7" y="12" width="1" height="1" fill="#000"/><rect x="8" y="12" width="1" height="1" fill="#000"/><rect x="9" y="12" width="1" height="1" fill="#000"/><rect x="10" y="12" width="1" height="1" fill="#000"/><rect x="0" y="13" width="1" height="1" fill="#000"/><rect x="1" y="13" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="13" width="1" height="1" fill="#fff"/><rect x="3" y="13" width="1" height="1" fill="#cbcbcb"/><rect x="4" y="13" width="1" height="1" fill="#000"/><rect x="5" y="13" width="1" height="1" fill="#cbcbcb"/><rect x="6" y="13" width="1" height="1" fill="#fff"/><rect x="7" y="13" width="1" height="1" fill="#000"/><rect x="0" y="14" width="1" height="1" fill="#000"/><rect x="1" y="14" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="14" width="1" height="1" fill="#cbcbcb"/><rect x="3" y="14" width="1" height="1" fill="#000"/><rect x="5" y="14" width="1" height="1" fill="#000"/><rect x="6" y="14" width="1" height="1" fill="#cbcbcb"/><rect x="7" y="14" width="1" height="1" fill="#fff"/><rect x="8" y="14" width="1" height="1" fill="#000"/><rect x="0" y="15" width="1" height="1" fill="#000"/><rect x="1" y="15" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="15" width="1" height="1" fill="#000"/><rect x="5" y="15" width="1" height="1" fill="#000"/><rect x="6" y="15" width="1" height="1" fill="#cbcbcb"/><rect x="7" y="15" width="1" height="1" fill="#fff"/><rect x="8" y="15" width="1" height="1" fill="#000"/><rect x="0" y="16" width="1" height="1" fill="#000"/><rect x="1" y="16" width="1" height="1" fill="#000"/><rect x="6" y="16" width="1" height="1" fill="#000"/><rect x="7" y="16" width="1" height="1" fill="#cbcbcb"/><rect x="8" y="16" width="1" height="1" fill="#fff"/><rect x="9" y="16" width="1" height="1" fill="#000"/><rect x="6" y="17" width="1" height="1" fill="#000"/><rect x="7" y="17" width="1" height="1" fill="#cbcbcb"/><rect x="8" y="17" width="1" height="1" fill="#cbcbcb"/><rect x="9" y="17" width="1" height="1" fill="#000"/><rect x="7" y="18" width="1" height="1" fill="#000"/><rect x="8" y="18" width="1" height="1" fill="#000"/></svg></a>
+<div id="palette" title="click to change"><span>colour palette</span><b class="cell"><i id="pal-sh"></i><i id="pal-main"></i></b></div>
+<div id="cursor"></div>
 <div id="flash"></div>
 <div id="shots"></div>
 
@@ -46,7 +59,20 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 // ---- settings -------------------------------------------------------
 const CELL = 14;                 // dot grid size in css px
 const ASCII_CELL = 11;           // ascii cell size inside the frame (smaller = sharper)
-const PINK_HOT = "#ff4fc3", PINK_PALE = "#ffc4ec", INK = "#1a0a14", LIME = "#d4ff00";
+// main = filled cells, pale = light cells, ink = glyphs, accent = outlines + fingertip dots
+const PALETTES = [
+  { main:"#ff4fc3", pale:"#ffc4ec", ink:"#1a0a14", accent:"#d4ff00" },   // pink
+  { main:"#3d5bff", pale:"#c9d3ff", ink:"#0a0d2b", accent:"#ffe14d" },   // blue
+  { main:"#ff6a1a", pale:"#ffd2b5", ink:"#2a0f00", accent:"#1ee3c1" },   // orange
+  { main:"#19c37d", pale:"#c4f5df", ink:"#04210f", accent:"#ff4fc3" },   // green
+];
+// project labels you can point at + pinch. Edit urls/positions here.
+const PROJECTS = [
+  { label:"Vastra '26",       url:"https://vastravjti.com",     pos:"left:5vw; top:40vh" },
+  { label:"Audio Visualizer", url:"https://tva-neon.vercel.app", pos:"left:5vw; top:55vh" },
+  { label:"Poster Work",      url:"https://a7ash.github.io",     pos:"right:5vw; top:40vh" },
+  { label:"Decks",            url:"https://a7ash.github.io",     pos:"right:5vw; top:55vh" },
+];
 const MIRROR = true;
 // ---------------------------------------------------------------------
 
@@ -120,6 +146,59 @@ function isPeace(h) {
   const spread = d(h[8], h[12]) > d(h[5], h[8]) * 0.3;                    // index + middle form a V
   return up(8, 6) && up(12, 10) && down(16, 14) && down(20, 18) && spread;
 }
+// ---- palette (open palm cycles) ----
+let palIdx = 0, pal = PALETTES[0];
+function setPalette(i) {
+  palIdx = i % PALETTES.length; pal = PALETTES[palIdx];
+  document.getElementById("pal-main").style.background = pal.main;
+  document.getElementById("pal-sh").style.background = pal.pale;
+}
+setPalette(0);
+document.getElementById("palette").onclick = () => setPalette(palIdx + 1);
+
+const hd = (a, b) => Math.hypot((a.x - b.x) * (v.videoWidth || 1), (a.y - b.y) * (v.videoHeight || 1));
+function isPalm(h) {
+  const up = (t, p) => hd(h[t], h[0]) > hd(h[p], h[0]) * 1.3;
+  return up(8, 6) && up(12, 10) && up(16, 14) && up(20, 18)
+    && hd(h[4], h[17]) > hd(h[3], h[17]) * 1.05              // thumb out
+    && hd(h[8], h[20]) > hd(h[5], h[17]) * 1.1;              // fingers spread
+}
+let palmFrames = 0, notPalm = 0, palmArmed = true;
+function handlePalm(res) {
+  if (!(res.landmarks || []).some(isPalm)) { palmFrames = 0; if (++notPalm >= 5) palmArmed = true; return; }
+  notPalm = 0;
+  if (palmArmed && ++palmFrames >= 3) { setPalette(palIdx + 1); palmArmed = false; }   // once per palm raise
+}
+
+// ---- point + pinch navigation (one hand only; two hands = frame mode) ----
+const labels = PROJECTS.map(pr => {
+  const a = document.createElement("a");
+  a.className = "proj"; a.href = pr.url; a.textContent = pr.label; a.style.cssText = pr.pos;
+  document.body.appendChild(a); return a;
+});
+const cursor = document.getElementById("cursor");
+let cur = null, hover = null, pinched = false, lastClick = 0;
+function handleNav(res, now) {
+  const hands = res.landmarks || [];
+  if (hands.length !== 1) {
+    cursor.style.display = "none"; if (hover) hover.classList.remove("hot"); hover = null; pinched = false; cur = null; return;
+  }
+  const h = hands[0], m = cover();
+  const ratio = hd(h[4], h[8]) / hd(h[0], h[9]);                 // pinch distance vs hand size
+  if (ratio > 0.5 || !cur) {                                      // only move the cursor when not pinching
+    const t = mapPt(h[8], m), tx = t.x / dpr, ty = t.y / dpr;
+    cur = cur ? { x: cur.x + (tx - cur.x) * 0.5, y: cur.y + (ty - cur.y) * 0.5 } : { x: tx, y: ty };
+  }
+  cursor.style.display = "block"; cursor.style.left = cur.x + "px"; cursor.style.top = cur.y + "px";
+  const hit = labels.find(el => { const r = el.getBoundingClientRect();
+    return cur.x > r.left - 14 && cur.x < r.right + 14 && cur.y > r.top - 14 && cur.y < r.bottom + 14; }) || null;
+  if (hit !== hover) { if (hover) hover.classList.remove("hot"); if (hit) hit.classList.add("hot"); hover = hit; }
+  if (ratio < 0.28 && !pinched) {
+    pinched = true; cursor.classList.add("pinch");
+    if (hover && now - lastClick > 1200) { lastClick = now; location.href = hover.href; }
+  } else if (ratio > 0.45 && pinched) { pinched = false; cursor.classList.remove("pinch"); }
+}
+
 let peaceFrames = 0, lastShot = 0, wantShot = false;
 function handlePeace(res, now) {
   if (!(res.landmarks || []).some(isPeace)) { peaceFrames = 0; return; }
@@ -170,9 +249,9 @@ function drawAsciiInQuad(q, c, a) {
 
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const L = lv[y * cols + x], px_ = x * c, py = y * c, cx = px_ + c / 2, cy = py + c / 2;
-    ctx.fillStyle = L < 2 ? PINK_HOT : PINK_PALE;
+    ctx.fillStyle = L < 2 ? pal.main : pal.pale;
     ctx.fillRect(px_, py, c + 1, c + 1);
-    ctx.strokeStyle = ctx.fillStyle = INK;
+    ctx.strokeStyle = ctx.fillStyle = pal.ink;
     ctx.lineWidth = Math.max(1, dpr);
     if (L === 0) {                                   // ◎
       ctx.beginPath(); ctx.arc(cx, cy, c * 0.36, 0, 7); ctx.stroke();
@@ -190,7 +269,7 @@ function drawAsciiInQuad(q, c, a) {
   }
 
   // lime outline where dark meets light
-  ctx.strokeStyle = LIME; ctx.lineWidth = 2 * dpr; ctx.lineCap = "round";
+  ctx.strokeStyle = pal.accent; ctx.lineWidth = 2 * dpr; ctx.lineCap = "round";
   ctx.beginPath();
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const L = lv[y * cols + x] < 2;
@@ -205,7 +284,7 @@ function drawCorners(q, a) {
   ctx.save(); ctx.globalAlpha = a;
   for (const p of q) {
     ctx.beginPath(); ctx.arc(p.x, p.y, 9 * dpr, 0, 7);
-    ctx.fillStyle = LIME; ctx.fill(); ctx.lineWidth = 3 * dpr; ctx.strokeStyle = "#000"; ctx.stroke();
+    ctx.fillStyle = pal.accent; ctx.fill(); ctx.lineWidth = 3 * dpr; ctx.strokeStyle = "#000"; ctx.stroke();
   }
   ctx.restore();
 }
@@ -222,6 +301,8 @@ function frame() {
     const res = landmarker.detectForVideo(v, performance.now());
     target = findQuad(res, m);
     handlePeace(res, performance.now());
+    handleNav(res, performance.now());
+    handlePalm(res);
   }
   if (target) {
     quad = quad ? quad.map((p, i) => ({ x: p.x + (target[i].x - p.x) * 0.5, y: p.y + (target[i].y - p.y) * 0.5 })) : target;
@@ -237,7 +318,7 @@ function frame() {
     drawCorners(quad, alpha);
   } else drawDots(c);
   if (wantShot) takeShot();
-  hint.textContent = landmarker ? (alpha > 0.01 ? "" : "frame your face with two L-shaped hands, or flash a peace sign for a photo") : "loading hand tracking...";
+  hint.textContent = landmarker ? (alpha > 0.01 ? "" : "two L-hands = frame  |  peace sign = photo  |  open palm = colours  |  point + pinch = open project") : "loading hand tracking...";
 }
 
 document.getElementById("start").onclick = async () => {
