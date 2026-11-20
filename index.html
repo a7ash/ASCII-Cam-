@@ -215,6 +215,27 @@ function takeShot() {
 
 function level(l) { return l < 0.28 ? 0 : l < 0.5 ? 1 : l < 0.74 ? 2 : 3; }
 
+// matrix mode: pre-render each (brightness level, 0/1) cell once, then just blit it (fillText per cell was the lag)
+const spriteCache = {};
+function getSprites(c) {
+  const key = palIdx + ":" + Math.round(c);
+  if (spriteCache[key]) return spriteCache[key];
+  const sz = Math.ceil(c) + 1, out = [];
+  for (let L = 0; L < 4; L++) {
+    out[L] = [];
+    for (let b = 0; b < 2; b++) {
+      const k = document.createElement("canvas"); k.width = k.height = sz;
+      const g = k.getContext("2d");
+      g.fillStyle = L < 2 ? pal.main : pal.pale; g.fillRect(0, 0, sz, sz);
+      g.fillStyle = pal.digit[L]; g.font = "600 " + c + "px 'Geist Mono', ui-monospace, Menlo, monospace";
+      g.textAlign = "center"; g.textBaseline = "middle";
+      g.fillText(b ? "1" : "0", sz / 2, sz / 2 + c * 0.05);
+      out[L][b] = k;
+    }
+  }
+  return (spriteCache[key] = out);
+}
+
 function drawAsciiInQuad(q, c, a) {
   // sample the already-drawn video at grid resolution
   const cols = Math.ceil(W / c), rows = Math.ceil(H / c);
@@ -231,22 +252,22 @@ function drawAsciiInQuad(q, c, a) {
   ctx.globalAlpha = a;
   ctx.beginPath(); q.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.closePath();
   ctx.clip();
+  try {
 
   // bounding box of the quad -> only loop cells we need
   const x0 = Math.max(0, Math.floor(Math.min(...q.map(p => p.x)) / c)), x1 = Math.min(cols - 1, Math.floor(Math.max(...q.map(p => p.x)) / c));
   const y0 = Math.max(0, Math.floor(Math.min(...q.map(p => p.y)) / c)), y1 = Math.min(rows - 1, Math.floor(Math.max(...q.map(p => p.y)) / c));
 
   const tick = Math.floor(performance.now() / 400);
-  if (pal.digits) { ctx.font = "600 " + (c * 1.0) + "px 'Geist Mono', ui-monospace, Menlo, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; }
+  const spr = pal.digits ? getSprites(c) : null;
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const L = lv[y * cols + x], px_ = x * c, py = y * c, cx = px_ + c / 2, cy = py + c / 2;
-    ctx.fillStyle = L < 2 ? pal.main : pal.pale;
-    ctx.fillRect(px_, py, c + 1, c + 1);
-    if (pal.digits) {                                   // matrix mode: slowly flickering 0 / 1
-      ctx.fillStyle = pal.digit[L];
-      ctx.fillText(((x * 73856093 ^ y * 19349663 ^ tick * 83492791) >>> 0) & 1 ? "1" : "0", cx, cy + c * 0.05);
+    if (spr) {                                          // matrix mode: slowly flickering 0 / 1
+      ctx.drawImage(spr[L][((x * 73856093 ^ y * 19349663 ^ tick * 83492791) >>> 0) & 1], px_, py);
       continue;
     }
+    ctx.fillStyle = L < 2 ? pal.main : pal.pale;
+    ctx.fillRect(px_, py, c + 1, c + 1);
     ctx.strokeStyle = ctx.fillStyle = (L < 2 && pal.inkMain) || pal.ink;
     ctx.lineWidth = Math.max(1, dpr);
     if (L === 0) {                                   // ◎
@@ -273,7 +294,7 @@ function drawAsciiInQuad(q, c, a) {
     if (y < rows - 1 && L !== (lv[(y + 1) * cols + x] < 2)) { ctx.moveTo(x * c, (y + 1) * c); ctx.lineTo((x + 1) * c, (y + 1) * c); }
   }
   ctx.stroke();
-  ctx.restore();
+  } catch (e) { console.error(e); } finally { ctx.restore(); }
 }
 
 function drawCorners(q, a) {
