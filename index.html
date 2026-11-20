@@ -58,11 +58,11 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 // ---- settings -------------------------------------------------------
 const CELL = 14;                 // dot grid size in css px
 const ASCII_CELL = 11;           // ascii cell size inside the frame (smaller = sharper)
-// main = filled cells, pale = light cells, ink = glyphs (inkMain overrides on main cells), accent = outlines + fingertip dots
+// main = fill of dark areas, pale = fill of light areas, ink = glyphs on light areas (inkMain on dark areas), accent = outlines + fingertip dots
 const PALETTES = [
   { main:"#FF2E9A", pale:"#ffc2e0", ink:"#1a0a14", accent:"#CFFF04" },                    // neon fuchsia + cyber lime
   { main:"#5D00FF", pale:"#d5c2ff", ink:"#12002e", accent:"#FF2E9A" },                    // electric indigo + fuchsia
-  { main:"#04120a", pale:"#0b2a14", digits:["#1d5a2b","#33a047","#9bdc2a","#CFFF04"], accent:"#CFFF04" },   // matrix: dark green + lime 0/1
+  { main:"#CFFF04", pale:"#1C1C1C", ink:"#CFFF04", inkMain:"#1C1C1C", accent:"#CFFF04" },                  // inverted: lime in dark areas, black in light areas
   { main:"#1C1C1C", pale:"#e6e6e6", ink:"#1C1C1C", inkMain:"#8f2a2e", accent:"#b32d32" },                   // graphite black + muted red
 ];
 const MIRROR = true;
@@ -215,27 +215,6 @@ function takeShot() {
 
 function level(l) { return l < 0.28 ? 0 : l < 0.5 ? 1 : l < 0.74 ? 2 : 3; }
 
-// matrix mode: pre-render each (brightness level, 0/1) cell once, then just blit it (fillText per cell was the lag)
-const spriteCache = {};
-function getSprites(c) {
-  const key = palIdx + ":" + Math.round(c);
-  if (spriteCache[key]) return spriteCache[key];
-  const sz = Math.ceil(c) + 1, out = [];
-  for (let L = 0; L < 4; L++) {
-    out[L] = [];
-    for (let b = 0; b < 2; b++) {
-      const k = document.createElement("canvas"); k.width = k.height = sz;
-      const g = k.getContext("2d");
-      g.fillStyle = L < 2 ? pal.main : pal.pale; g.fillRect(0, 0, sz, sz);
-      g.fillStyle = pal.digit[L]; g.font = "600 " + c + "px 'Geist Mono', ui-monospace, Menlo, monospace";
-      g.textAlign = "center"; g.textBaseline = "middle";
-      g.fillText(b ? "1" : "0", sz / 2, sz / 2 + c * 0.05);
-      out[L][b] = k;
-    }
-  }
-  return (spriteCache[key] = out);
-}
-
 function drawAsciiInQuad(q, c, a) {
   // sample the already-drawn video at grid resolution
   const cols = Math.ceil(W / c), rows = Math.ceil(H / c);
@@ -259,13 +238,8 @@ function drawAsciiInQuad(q, c, a) {
   const y0 = Math.max(0, Math.floor(Math.min(...q.map(p => p.y)) / c)), y1 = Math.min(rows - 1, Math.floor(Math.max(...q.map(p => p.y)) / c));
 
   const tick = Math.floor(performance.now() / 400);
-  const spr = pal.digits ? getSprites(c) : null;
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const L = lv[y * cols + x], px_ = x * c, py = y * c, cx = px_ + c / 2, cy = py + c / 2;
-    if (spr) {                                          // matrix mode: slowly flickering 0 / 1
-      ctx.drawImage(spr[L][((x * 73856093 ^ y * 19349663 ^ tick * 83492791) >>> 0) & 1], px_, py);
-      continue;
-    }
     ctx.fillStyle = L < 2 ? pal.main : pal.pale;
     ctx.fillRect(px_, py, c + 1, c + 1);
     ctx.strokeStyle = ctx.fillStyle = (L < 2 && pal.inkMain) || pal.ink;
