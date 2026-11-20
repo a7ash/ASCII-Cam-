@@ -21,6 +21,8 @@
   @keyframes float { 0%,100% { transform:translate(0,0); } 50% { transform:translate(8px,8px); } }
   #palette { position:fixed; top:34px; right:44px; z-index:6; display:none; align-items:center; gap:16px; color:#000; font-size:19px; font-weight:600; cursor:pointer; user-select:none; }
   body.live #palette { display:flex; }
+  #palette.pulse { animation:pulse .35s ease-out; }
+  @keyframes pulse { 0% { transform:scale(1); } 40% { transform:scale(1.18); } 100% { transform:scale(1); } }
   #palette .cell { position:relative; width:22px; height:22px; margin-right:6px; }
   #palette .cell i { position:absolute; inset:0; border:2px solid #000; box-sizing:border-box; }
   #palette .cell #pal-sh { transform:translate(6px,6px); }
@@ -60,8 +62,8 @@ const ASCII_CELL = 11;           // ascii cell size inside the frame (smaller = 
 const PALETTES = [
   { main:"#FF2E9A", pale:"#ffc2e0", ink:"#1a0a14", accent:"#CFFF04" },                    // neon fuchsia + cyber lime
   { main:"#5D00FF", pale:"#d5c2ff", ink:"#12002e", accent:"#FF2E9A" },                    // electric indigo + fuchsia
-  { main:"#CFFF04", pale:"#f1ffb3", ink:"#1C1C1C", accent:"#5D00FF" },                    // cyber lime + indigo
-  { main:"#1C1C1C", pale:"#f2f2f2", ink:"#1C1C1C", inkMain:"#ff2a2a", accent:"#ff2a2a" }, // graphite black + red
+  { main:"#04120a", pale:"#0b2a14", digits:["#1d5a2b","#33a047","#9bdc2a","#CFFF04"], accent:"#CFFF04" },   // matrix: dark green + lime 0/1
+  { main:"#1C1C1C", pale:"#e6e6e6", ink:"#1C1C1C", inkMain:"#8f2a2e", accent:"#b32d32" },                   // graphite black + muted red
 ];
 const MIRROR = true;
 // ---------------------------------------------------------------------
@@ -141,6 +143,7 @@ let palIdx = 0, pal = PALETTES[0];
 function setPalette(i) {
   palIdx = i % PALETTES.length; pal = PALETTES[palIdx];
   document.getElementById("pal-main").style.background = pal.main;
+  const w = document.getElementById("palette"); w.classList.remove("pulse"); void w.offsetWidth; w.classList.add("pulse");
   document.getElementById("pal-sh").style.background = pal.pale;
   document.getElementById("pal-main").style.borderColor = document.getElementById("pal-sh").style.borderColor = pal.accent;
 }
@@ -149,14 +152,13 @@ document.getElementById("palette").onclick = () => setPalette(palIdx + 1);
 
 const hd = (a, b) => Math.hypot((a.x - b.x) * (v.videoWidth || 1), (a.y - b.y) * (v.videoHeight || 1));
 function isPalm(h) {
-  const up = (t, p) => hd(h[t], h[0]) > hd(h[p], h[0]) * 1.3;
-  return up(8, 6) && up(12, 10) && up(16, 14) && up(20, 18)
-    && hd(h[4], h[17]) > hd(h[3], h[17]) * 1.05              // thumb out
-    && hd(h[8], h[20]) > hd(h[5], h[17]) * 1.1;              // fingers spread
+  const up = (t, p) => hd(h[t], h[0]) > hd(h[p], h[0]) * 1.2;
+  return up(8, 6) && up(12, 10) && up(16, 14) && up(20, 18)                // four fingers up
+    && hd(h[8], h[20]) > hd(h[5], h[17]);                                  // and spread
 }
 let palmFrames = 0, notPalm = 0, palmArmed = true;
 function handlePalm(res) {
-  if (!(res.landmarks || []).some(isPalm)) { palmFrames = 0; if (++notPalm >= 5) palmArmed = true; return; }
+  if (!(res.landmarks || []).some(isPalm)) { palmFrames = 0; if (++notPalm >= 3) palmArmed = true; return; }
   notPalm = 0;
   if (palmArmed && ++palmFrames >= 3) { setPalette(palIdx + 1); palmArmed = false; }   // once per palm raise
 }
@@ -234,10 +236,17 @@ function drawAsciiInQuad(q, c, a) {
   const x0 = Math.max(0, Math.floor(Math.min(...q.map(p => p.x)) / c)), x1 = Math.min(cols - 1, Math.floor(Math.max(...q.map(p => p.x)) / c));
   const y0 = Math.max(0, Math.floor(Math.min(...q.map(p => p.y)) / c)), y1 = Math.min(rows - 1, Math.floor(Math.max(...q.map(p => p.y)) / c));
 
+  const tick = Math.floor(performance.now() / 400);
+  if (pal.digits) { ctx.font = "600 " + (c * 1.0) + "px 'Geist Mono', ui-monospace, Menlo, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; }
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const L = lv[y * cols + x], px_ = x * c, py = y * c, cx = px_ + c / 2, cy = py + c / 2;
     ctx.fillStyle = L < 2 ? pal.main : pal.pale;
     ctx.fillRect(px_, py, c + 1, c + 1);
+    if (pal.digits) {                                   // matrix mode: slowly flickering 0 / 1
+      ctx.fillStyle = pal.digit[L];
+      ctx.fillText(((x * 73856093 ^ y * 19349663 ^ tick * 83492791) >>> 0) & 1 ? "1" : "0", cx, cy + c * 0.05);
+      continue;
+    }
     ctx.strokeStyle = ctx.fillStyle = (L < 2 && pal.inkMain) || pal.ink;
     ctx.lineWidth = Math.max(1, dpr);
     if (L === 0) {                                   // ◎
