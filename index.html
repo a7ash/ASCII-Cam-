@@ -24,10 +24,7 @@
   #palette .cell { position:relative; width:22px; height:22px; margin-right:6px; }
   #palette .cell i { position:absolute; inset:0; border:2px solid #000; box-sizing:border-box; }
   #palette .cell #pal-sh { transform:translate(6px,6px); }
-  .proj { position:fixed; z-index:6; display:none; padding:12px 24px; font-size:20px; font-weight:600; color:#d4ff00; background:rgba(0,0,0,.55); border:2px solid #d4ff00; border-radius:999px; text-decoration:none; animation:bob 3s ease-in-out infinite; transition:transform .2s, background .2s, color .2s; }
-  body.live .proj { display:block; }
-  .proj.hot, .proj:hover { background:#d4ff00; color:#000; transform:scale(1.12); }
-  @keyframes bob { 0%,100% { translate:0 0; } 50% { translate:0 -8px; } }
+  #home-link.hot { text-decoration:underline; transform:scale(1.15); transform-origin:left center; }
   #cursor { position:fixed; left:0; top:0; width:30px; height:30px; margin:-15px 0 0 -15px; border:3px solid #d4ff00; border-radius:50%; background:rgba(0,0,0,.35); z-index:9; pointer-events:none; display:none; transition:transform .12s, background .12s; }
   #cursor.pinch { background:#d4ff00; transform:scale(.65); }
   #shots { position:fixed; right:16px; bottom:16px; display:flex; gap:10px; z-index:6; }
@@ -59,19 +56,12 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 // ---- settings -------------------------------------------------------
 const CELL = 14;                 // dot grid size in css px
 const ASCII_CELL = 11;           // ascii cell size inside the frame (smaller = sharper)
-// main = filled cells, pale = light cells, ink = glyphs, accent = outlines + fingertip dots
+// main = filled cells, pale = light cells, ink = glyphs (inkMain overrides on main cells), accent = outlines + fingertip dots
 const PALETTES = [
-  { main:"#ff4fc3", pale:"#ffc4ec", ink:"#1a0a14", accent:"#d4ff00" },   // pink
-  { main:"#3d5bff", pale:"#c9d3ff", ink:"#0a0d2b", accent:"#ffe14d" },   // blue
-  { main:"#ff6a1a", pale:"#ffd2b5", ink:"#2a0f00", accent:"#1ee3c1" },   // orange
-  { main:"#19c37d", pale:"#c4f5df", ink:"#04210f", accent:"#ff4fc3" },   // green
-];
-// project labels you can point at + pinch. Edit urls/positions here.
-const PROJECTS = [
-  { label:"Vastra '26",       url:"https://vastravjti.com",     pos:"left:5vw; top:40vh" },
-  { label:"Audio Visualizer", url:"https://tva-neon.vercel.app", pos:"left:5vw; top:55vh" },
-  { label:"Poster Work",      url:"https://a7ash.github.io",     pos:"right:5vw; top:40vh" },
-  { label:"Decks",            url:"https://a7ash.github.io",     pos:"right:5vw; top:55vh" },
+  { main:"#FF2E9A", pale:"#ffc2e0", ink:"#1a0a14", accent:"#CFFF04" },                    // neon fuchsia + cyber lime
+  { main:"#5D00FF", pale:"#d5c2ff", ink:"#12002e", accent:"#FF2E9A" },                    // electric indigo + fuchsia
+  { main:"#CFFF04", pale:"#f1ffb3", ink:"#1C1C1C", accent:"#5D00FF" },                    // cyber lime + indigo
+  { main:"#1C1C1C", pale:"#f2f2f2", ink:"#1C1C1C", inkMain:"#ff2a2a", accent:"#ff2a2a" }, // graphite black + red
 ];
 const MIRROR = true;
 // ---------------------------------------------------------------------
@@ -152,6 +142,7 @@ function setPalette(i) {
   palIdx = i % PALETTES.length; pal = PALETTES[palIdx];
   document.getElementById("pal-main").style.background = pal.main;
   document.getElementById("pal-sh").style.background = pal.pale;
+  document.getElementById("pal-main").style.borderColor = document.getElementById("pal-sh").style.borderColor = pal.accent;
 }
 setPalette(0);
 document.getElementById("palette").onclick = () => setPalette(palIdx + 1);
@@ -170,12 +161,8 @@ function handlePalm(res) {
   if (palmArmed && ++palmFrames >= 3) { setPalette(palIdx + 1); palmArmed = false; }   // once per palm raise
 }
 
-// ---- point + pinch navigation (one hand only; two hands = frame mode) ----
-const labels = PROJECTS.map(pr => {
-  const a = document.createElement("a");
-  a.className = "proj"; a.href = pr.url; a.textContent = pr.label; a.style.cssText = pr.pos;
-  document.body.appendChild(a); return a;
-});
+// ---- point + pinch the portfolio link (one hand only; two hands = frame mode) ----
+const labels = [document.getElementById("home-link")];            // only the portfolio link is selectable
 const cursor = document.getElementById("cursor");
 let cur = null, hover = null, pinched = false, lastClick = 0;
 function handleNav(res, now) {
@@ -191,7 +178,7 @@ function handleNav(res, now) {
   }
   cursor.style.display = "block"; cursor.style.left = cur.x + "px"; cursor.style.top = cur.y + "px";
   const hit = labels.find(el => { const r = el.getBoundingClientRect();
-    return cur.x > r.left - 14 && cur.x < r.right + 14 && cur.y > r.top - 14 && cur.y < r.bottom + 14; }) || null;
+    return cur.x > r.left - 30 && cur.x < r.right + 30 && cur.y > r.top - 30 && cur.y < r.bottom + 40; }) || null;
   if (hit !== hover) { if (hover) hover.classList.remove("hot"); if (hit) hit.classList.add("hot"); hover = hit; }
   if (ratio < 0.28 && !pinched) {
     pinched = true; cursor.classList.add("pinch");
@@ -251,7 +238,7 @@ function drawAsciiInQuad(q, c, a) {
     const L = lv[y * cols + x], px_ = x * c, py = y * c, cx = px_ + c / 2, cy = py + c / 2;
     ctx.fillStyle = L < 2 ? pal.main : pal.pale;
     ctx.fillRect(px_, py, c + 1, c + 1);
-    ctx.strokeStyle = ctx.fillStyle = pal.ink;
+    ctx.strokeStyle = ctx.fillStyle = (L < 2 && pal.inkMain) || pal.ink;
     ctx.lineWidth = Math.max(1, dpr);
     if (L === 0) {                                   // ◎
       ctx.beginPath(); ctx.arc(cx, cy, c * 0.36, 0, 7); ctx.stroke();
@@ -318,7 +305,7 @@ function frame() {
     drawCorners(quad, alpha);
   } else drawDots(c);
   if (wantShot) takeShot();
-  hint.textContent = landmarker ? (alpha > 0.01 ? "" : "two L-hands = frame  |  peace sign = photo  |  open palm = colours  |  point + pinch = open project") : "loading hand tracking...";
+  hint.textContent = landmarker ? (alpha > 0.01 ? "" : "two L-hands = frame  |  peace sign = photo  |  open palm = colours  |  point + pinch my link = portfolio") : "loading hand tracking...";
 }
 
 document.getElementById("start").onclick = async () => {
