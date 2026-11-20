@@ -131,6 +131,56 @@ function findQuad(res, m) {
 }
 
 // peace sign: index + middle up, ring + pinky curled (thumb free). Works with either hand.
+// ---- palette (open palm cycles) ----
+let palIdx = 0, pal = PALETTES[0];
+function setPalette(i) {
+  palIdx = i % PALETTES.length; pal = PALETTES[palIdx];
+  document.getElementById("pal-main").style.background = pal.main;
+  document.getElementById("pal-sh").style.background = pal.pale;
+  document.getElementById("pal-main").style.borderColor = document.getElementById("pal-sh").style.borderColor = pal.accent;
+  const w = document.getElementById("palette"); w.classList.remove("pulse"); void w.offsetWidth; w.classList.add("pulse");
+}
+setPalette(0);
+document.getElementById("palette").onclick = () => setPalette(palIdx + 1);
+
+const hd = (a, b) => Math.hypot((a.x - b.x) * (v.videoWidth || 1), (a.y - b.y) * (v.videoHeight || 1));
+function isPalm(h) {
+  const up = (t, p) => hd(h[t], h[0]) > hd(h[p], h[0]) * 1.2;
+  return up(8, 6) && up(12, 10) && up(16, 14) && up(20, 18)                // four fingers up
+    && hd(h[8], h[20]) > hd(h[5], h[17]);                                  // and spread
+}
+let palmFrames = 0, notPalm = 0, palmArmed = true;
+function handlePalm(res) {
+  if (!(res.landmarks || []).some(isPalm)) { palmFrames = 0; if (++notPalm >= 3) palmArmed = true; return; }
+  notPalm = 0;
+  if (palmArmed && ++palmFrames >= 3) { setPalette(palIdx + 1); palmArmed = false; }   // once per palm raise
+}
+
+// ---- point + pinch the portfolio link (one hand only; two hands = frame mode) ----
+const labels = [document.getElementById("home-link")];            // only the portfolio link is selectable
+const cursor = document.getElementById("cursor");
+let cur = null, hover = null, pinched = false, lastClick = 0;
+function handleNav(res, now) {
+  const hands = res.landmarks || [];
+  if (hands.length !== 1) {
+    cursor.style.display = "none"; if (hover) hover.classList.remove("hot"); hover = null; pinched = false; cur = null; return;
+  }
+  const h = hands[0], m = cover();
+  const ratio = hd(h[4], h[8]) / hd(h[0], h[9]);                 // pinch distance vs hand size
+  if (ratio > 0.5 || !cur) {                                      // only move the cursor when not pinching
+    const t = mapPt(h[8], m), tx = t.x / dpr, ty = t.y / dpr;
+    cur = cur ? { x: cur.x + (tx - cur.x) * 0.5, y: cur.y + (ty - cur.y) * 0.5 } : { x: tx, y: ty };
+  }
+  cursor.style.display = "block"; cursor.style.left = cur.x + "px"; cursor.style.top = cur.y + "px";
+  const hit = labels.find(el => { const r = el.getBoundingClientRect();
+    return cur.x > r.left - 30 && cur.x < r.right + 30 && cur.y > r.top - 30 && cur.y < r.bottom + 40; }) || null;
+  if (hit !== hover) { if (hover) hover.classList.remove("hot"); if (hit) hit.classList.add("hot"); hover = hit; }
+  if (ratio < 0.28 && !pinched) {
+    pinched = true; cursor.classList.add("pinch");
+    if (hover && now - lastClick > 1200) { lastClick = now; location.href = hover.href; }
+  } else if (ratio > 0.45 && pinched) { pinched = false; cursor.classList.remove("pinch"); }
+}
+
 function fingers(h) {
   const d = (a, b) => Math.hypot((a.x - b.x) * (v.videoWidth || 1), (a.y - b.y) * (v.videoHeight || 1));
   const up = (tip, pip) => d(h[tip], h[0]) > d(h[pip], h[0]) * 1.2;
