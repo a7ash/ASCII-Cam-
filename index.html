@@ -13,7 +13,8 @@
   #c { visibility:hidden; }
   video { display:none; }
   #msg { position:fixed; inset:0; display:grid; place-items:center; text-align:center; z-index:3; padding:24px; }
-  #msg button { font:inherit; font-size:24px; font-weight:600; padding:20px 44px; border:0; border-radius:999px; background:#d4ff00; color:#111; cursor:pointer; }
+  #msg { pointer-events:none; }
+  #msg button { pointer-events:auto; font:inherit; font-size:24px; font-weight:600; padding:20px 44px; border:0; border-radius:999px; background:#d4ff00; color:#111; cursor:pointer; }
   #home-link { position:fixed; top:34px; left:44px; z-index:6; color:#d4ff00; text-decoration:none; font-size:19px; font-weight:600; letter-spacing:.02em; padding-right:34px; transition:color .3s; }
   #home-link:hover { text-decoration:underline; }
   body.live #home-link { color:#000; }
@@ -26,7 +27,7 @@
   #palette .cell { position:relative; width:22px; height:22px; margin-right:6px; }
   #palette .cell i { position:absolute; inset:0; border:2px solid #000; box-sizing:border-box; }
   #palette .cell #pal-sh { transform:translate(6px,6px); }
-  #home-link.hot { text-decoration:underline; transform:scale(1.15); transform-origin:left center; }
+  #home-link.hot { text-decoration:underline; }
   #cursor { position:fixed; left:0; top:0; width:30px; height:30px; margin:-15px 0 0 -15px; border:3px solid #d4ff00; border-radius:50%; background:rgba(0,0,0,.35); z-index:9; pointer-events:none; display:none; transition:transform .12s, background .12s; }
   #cursor.pinch { background:#d4ff00; transform:scale(.65); }
   #shots { position:fixed; right:16px; bottom:16px; display:flex; gap:10px; z-index:6; }
@@ -35,6 +36,8 @@
   #shots a span { position:absolute; inset:auto 0 0 0; background:rgba(0,0,0,.65); color:#d4ff00; font-size:11px; text-align:center; padding:3px; opacity:0; transition:opacity .2s; }
   #shots a:hover span { opacity:1; }
   @keyframes pop { from { transform:scale(.6); opacity:0; } to { transform:scale(1); opacity:1; } }
+  #toast { position:fixed; right:16px; bottom:150px; z-index:7; background:#000; color:#d4ff00; border:2px solid #d4ff00; border-radius:6px; padding:8px 12px; font-size:13px; font-weight:600; opacity:0; transition:opacity .3s; pointer-events:none; }
+  #toast.on { opacity:1; }
   #flash { position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:5; transition:opacity .5s; }
   #hint { position:fixed; left:0; right:0; bottom:16px; text-align:center; font-size:13px; opacity:.8; z-index:2; pointer-events:none; text-shadow:0 1px 4px #000; }
 </style>
@@ -48,6 +51,7 @@
 <a id="home-link" href="https://a7ash.github.io" target="_blank" rel="noopener">a7ash.github.io<svg viewBox="0 0 12 20" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="0" width="1" height="1" fill="#000"/><rect x="0" y="1" width="1" height="1" fill="#000"/><rect x="1" y="1" width="1" height="1" fill="#000"/><rect x="0" y="2" width="1" height="1" fill="#000"/><rect x="1" y="2" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="2" width="1" height="1" fill="#000"/><rect x="0" y="3" width="1" height="1" fill="#000"/><rect x="1" y="3" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="3" width="1" height="1" fill="#fff"/><rect x="3" y="3" width="1" height="1" fill="#000"/><rect x="0" y="4" width="1" height="1" fill="#000"/><rect x="1" y="4" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="4" width="1" height="1" fill="#fff"/><rect x="3" y="4" width="1" height="1" fill="#fff"/><rect x="4" y="4" width="1" height="1" fill="#000"/><rect x="0" y="5" width="1" height="1" fill="#000"/><rect x="1" y="5" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="5" width="1" height="1" fill="#fff"/><rect x="3" y="5" width="1" height="1" fill="#fff"/><rect x="4" y="5" width="1" height="1" fill="#fff"/><rect x="5" y="5" width="1" height="1" fill="#000"/><rect x="0" y="6" width="1" height="1" fill="#000"/><rect x="1" y="6" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="6" width="1" height="1" fill="#fff"/><rect x="3" y="6" width="1" height="1" fill="#fff"/><rect x="4" y="6" width="1" height="1" fill="#fff"/><rect x="5" y="6" width="1" height="1" fill="#fff"/><rect x="6" y="6" width="1" height="1" fill="#000"/><rect x="0" y="7" width="1" height="1" fill="#000"/><rect x="1" y="7" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="7" width="1" height="1" fill="#fff"/><rect x="3" y="7" width="1" height="1" fill="#fff"/><rect x="4" y="7" width="1" height="1" fill="#fff"/><rect x="5" y="7" width="1" height="1" fill="#fff"/><rect x="6" y="7" width="1" height="1" fill="#fff"/><rect x="7" y="7" width="1" height="1" fill="#000"/><rect x="0" y="8" width="1" height="1" fill="#000"/><rect x="1" y="8" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="8" width="1" height="1" fill="#fff"/><rect x="3" y="8" width="1" height="1" fill="#fff"/><rect x="4" y="8" width="1" height="1" fill="#fff"/><rect x="5" y="8" width="1" height="1" fill="#fff"/><rect x="6" y="8" width="1" height="1" fill="#fff"/><rect x="7" y="8" width="1" height="1" fill="#fff"/><rect x="8" y="8" width="1" height="1" fill="#000"/><rect x="0" y="9" width="1" height="1" fill="#000"/><rect x="1" y="9" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="9" width="1" height="1" fill="#fff"/><rect x="3" y="9" width="1" height="1" fill="#fff"/><rect x="4" y="9" width="1" height="1" fill="#fff"/><rect x="5" y="9" width="1" height="1" fill="#fff"/><rect x="6" y="9" width="1" height="1" fill="#fff"/><rect x="7" y="9" width="1" height="1" fill="#fff"/><rect x="8" y="9" width="1" height="1" fill="#fff"/><rect x="9" y="9" width="1" height="1" fill="#000"/><rect x="0" y="10" width="1" height="1" fill="#000"/><rect x="1" y="10" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="10" width="1" height="1" fill="#fff"/><rect x="3" y="10" width="1" height="1" fill="#fff"/><rect x="4" y="10" width="1" height="1" fill="#fff"/><rect x="5" y="10" width="1" height="1" fill="#fff"/><rect x="6" y="10" width="1" height="1" fill="#fff"/><rect x="7" y="10" width="1" height="1" fill="#fff"/><rect x="8" y="10" width="1" height="1" fill="#fff"/><rect x="9" y="10" width="1" height="1" fill="#fff"/><rect x="10" y="10" width="1" height="1" fill="#000"/><rect x="0" y="11" width="1" height="1" fill="#000"/><rect x="1" y="11" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="11" width="1" height="1" fill="#fff"/><rect x="3" y="11" width="1" height="1" fill="#fff"/><rect x="4" y="11" width="1" height="1" fill="#fff"/><rect x="5" y="11" width="1" height="1" fill="#fff"/><rect x="6" y="11" width="1" height="1" fill="#fff"/><rect x="7" y="11" width="1" height="1" fill="#cbcbcb"/><rect x="8" y="11" width="1" height="1" fill="#cbcbcb"/><rect x="9" y="11" width="1" height="1" fill="#cbcbcb"/><rect x="10" y="11" width="1" height="1" fill="#cbcbcb"/><rect x="11" y="11" width="1" height="1" fill="#000"/><rect x="0" y="12" width="1" height="1" fill="#000"/><rect x="1" y="12" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="12" width="1" height="1" fill="#fff"/><rect x="3" y="12" width="1" height="1" fill="#fff"/><rect x="4" y="12" width="1" height="1" fill="#fff"/><rect x="5" y="12" width="1" height="1" fill="#fff"/><rect x="6" y="12" width="1" height="1" fill="#fff"/><rect x="7" y="12" width="1" height="1" fill="#000"/><rect x="8" y="12" width="1" height="1" fill="#000"/><rect x="9" y="12" width="1" height="1" fill="#000"/><rect x="10" y="12" width="1" height="1" fill="#000"/><rect x="0" y="13" width="1" height="1" fill="#000"/><rect x="1" y="13" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="13" width="1" height="1" fill="#fff"/><rect x="3" y="13" width="1" height="1" fill="#cbcbcb"/><rect x="4" y="13" width="1" height="1" fill="#000"/><rect x="5" y="13" width="1" height="1" fill="#cbcbcb"/><rect x="6" y="13" width="1" height="1" fill="#fff"/><rect x="7" y="13" width="1" height="1" fill="#000"/><rect x="0" y="14" width="1" height="1" fill="#000"/><rect x="1" y="14" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="14" width="1" height="1" fill="#cbcbcb"/><rect x="3" y="14" width="1" height="1" fill="#000"/><rect x="5" y="14" width="1" height="1" fill="#000"/><rect x="6" y="14" width="1" height="1" fill="#cbcbcb"/><rect x="7" y="14" width="1" height="1" fill="#fff"/><rect x="8" y="14" width="1" height="1" fill="#000"/><rect x="0" y="15" width="1" height="1" fill="#000"/><rect x="1" y="15" width="1" height="1" fill="#cbcbcb"/><rect x="2" y="15" width="1" height="1" fill="#000"/><rect x="5" y="15" width="1" height="1" fill="#000"/><rect x="6" y="15" width="1" height="1" fill="#cbcbcb"/><rect x="7" y="15" width="1" height="1" fill="#fff"/><rect x="8" y="15" width="1" height="1" fill="#000"/><rect x="0" y="16" width="1" height="1" fill="#000"/><rect x="1" y="16" width="1" height="1" fill="#000"/><rect x="6" y="16" width="1" height="1" fill="#000"/><rect x="7" y="16" width="1" height="1" fill="#cbcbcb"/><rect x="8" y="16" width="1" height="1" fill="#fff"/><rect x="9" y="16" width="1" height="1" fill="#000"/><rect x="6" y="17" width="1" height="1" fill="#000"/><rect x="7" y="17" width="1" height="1" fill="#cbcbcb"/><rect x="8" y="17" width="1" height="1" fill="#cbcbcb"/><rect x="9" y="17" width="1" height="1" fill="#000"/><rect x="7" y="18" width="1" height="1" fill="#000"/><rect x="8" y="18" width="1" height="1" fill="#000"/></svg></a>
 <div id="palette" title="click to change"><span>colour palette</span><b class="cell"><i id="pal-sh"></i><i id="pal-main"></i></b></div>
 <div id="cursor"></div>
+<div id="toast"></div>
 <div id="flash"></div>
 <div id="shots"></div>
 
@@ -62,7 +66,7 @@ const ASCII_CELL = 11;           // ascii cell size inside the frame (smaller = 
 const PALETTES = [
   { main:"#FF2E9A", pale:"#ffc2e0", ink:"#1a0a14", accent:"#CFFF04" },                    // neon fuchsia + cyber lime
   { main:"#5D00FF", pale:"#d5c2ff", ink:"#12002e", accent:"#FF2E9A" },                    // electric indigo + fuchsia
-  { main:"#CFFF04", pale:"#1C1C1C", ink:"#CFFF04", inkMain:"#1C1C1C", accent:"#CFFF04", equalize:true },                  // inverted: lime in dark areas, black in light areas
+  { main:"#1C1C1C", pale:"#CFFF04", ink:"#1C1C1C", inkMain:"#CFFF04", accent:"#CFFF04", equalize:true },   // black in dark areas, cyber lime in light areas
   { main:"#1C1C1C", pale:"#e6e6e6", ink:"#1C1C1C", inkMain:"#8f2a2e", accent:"#b32d32" },                   // graphite black + muted red
 ];
 const MIRROR = true;
@@ -185,18 +189,46 @@ function fingers(h) {
   const d = (a, b) => Math.hypot((a.x - b.x) * (v.videoWidth || 1), (a.y - b.y) * (v.videoHeight || 1));
   const up = (tip, pip) => d(h[tip], h[0]) > d(h[pip], h[0]) * 1.2;
   const down = (tip, pip) => d(h[tip], h[0]) < d(h[pip], h[0]) * 1.0;
-  return { d, i: up(8, 6), m: up(12, 10), r: up(16, 14), p: up(20, 18), rDown: down(16, 14), pDown: down(20, 18) };
+  return { d, i: up(8, 6), m: up(12, 10), r: up(16, 14), p: up(20, 18), iDown: down(8, 6), mDown: down(12, 10), rDown: down(16, 14), pDown: down(20, 18) };
 }
 // peace: index + middle up, ring + pinky curled, fingers apart
 function isPeace(h) { const f = fingers(h); return f.i && f.m && f.rDown && f.pDown && f.d(h[8], h[12]) > f.d(h[5], h[8]) * 0.2; }
 // devil horns: index + pinky up, ring curled (middle can be up or down, so "peace + pinky" works too)
 function isHorns(h) { const f = fingers(h); return f.i && f.p && f.rDown; }
-let peaceFrames = 0, lastShot = 0, wantShot = 0;          // wantShot: 1 = snap, 2 = snap + download
+let peaceFrames = 0, lastShot = 0, wantShot = 0, hornsLatched = false, hornsOff = 0;   // wantShot: 1 = snap, 2 = snap + download
 function handlePeace(res, now) {
   const hands = res.landmarks || [];
-  const mode = hands.some(isHorns) ? 2 : hands.some(isPeace) ? 1 : 0;
-  if (!mode) { peaceFrames = 0; return; }
-  if (++peaceFrames >= 2 && now - lastShot > 3000) { wantShot = mode; lastShot = now; }   // 2 frames, 3s cooldown
+  const horns = hands.some(isHorns), peace = !horns && hands.some(isPeace);
+  if (horns) hornsOff = 0; else if (++hornsOff >= 5) hornsLatched = false;     // horns must be dropped before they count again
+  if (!horns && !peace) { peaceFrames = 0; return; }
+  if (++peaceFrames < 2 || now - lastShot < 3000) return;
+  if (horns) { if (hornsLatched) return; hornsLatched = true; wantShot = 2; }  // exactly one download per horns raise
+  else wantShot = 1;
+  lastShot = now;
+}
+
+// thumbs up: thumb pointing up, other four fingers curled, held ~0.3s -> stop camera, back to home screen
+function isThumbsUp(h) {
+  const f = fingers(h);
+  return f.iDown && f.mDown && f.rDown && f.pDown
+    && h[4].y < h[3].y && h[3].y < h[2].y && h[4].y < h[5].y - 0.04
+    && Math.abs(h[4].x - h[2].x) < Math.abs(h[4].y - h[2].y);
+}
+let thumbFrames = 0;
+function handleThumb(res) {
+  if (!(res.landmarks || []).some(isThumbsUp)) { thumbFrames = 0; return; }
+  if (++thumbFrames >= 8) {
+    if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
+    location.reload();
+  }
+}
+
+let downloads = 0, toastTimer = 0;
+function notifyDownload() {
+  downloads++;
+  const t = document.getElementById("toast");
+  t.textContent = "file downloaded \u00b7 " + downloads + " total";
+  t.classList.add("on"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("on"), 3000);
 }
 function takeShot() {
   const dl = wantShot === 2; wantShot = 0;
@@ -207,6 +239,7 @@ function takeShot() {
     a.href = url; a.download = "ascii-frame-" + Date.now() + ".png";
     a.innerHTML = '<img alt="snapshot" src="' + url + '"><span>click to download</span>';
     const box = document.getElementById("shots");
+    a.addEventListener("click", notifyDownload);          // counts thumbnail clicks and the horns auto-download
     box.appendChild(a);
     if (dl) a.click();                                    // horns: also save the file straight away
     while (box.children.length > 4) { URL.revokeObjectURL(box.firstChild.href); box.firstChild.remove(); }
@@ -308,6 +341,7 @@ function frame() {
     handlePeace(res, performance.now());
     handleNav(res, performance.now());
     handlePalm(res);
+    handleThumb(res);
   }
   if (target) {
     quad = quad ? quad.map((p, i) => ({ x: p.x + (target[i].x - p.x) * 0.5, y: p.y + (target[i].y - p.y) * 0.5 })) : target;
@@ -323,7 +357,7 @@ function frame() {
     drawCorners(quad, alpha);
   } else drawDots(c);
   if (wantShot) takeShot();
-  hint.textContent = landmarker ? (alpha > 0.01 ? "" : "two L-hands = frame  |  peace = photo  |  horns = save photo  |  open palm = colours  |  point + pinch my link = portfolio") : "loading hand tracking...";
+  hint.textContent = landmarker ? (alpha > 0.01 ? "" : "two L-hands = frame  |  peace = photo  |  horns = save photo  |  thumbs up = exit  |  open palm = colours  |  point + pinch my link = portfolio") : "loading hand tracking...";
 }
 
 document.getElementById("start").onclick = async () => {
